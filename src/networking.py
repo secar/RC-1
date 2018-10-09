@@ -32,7 +32,7 @@ def get_waiting_clients(clients):
         [User()] + readable
    return readable 
 
-class Networker:
+class ClientSocket:
 
 ### PUBLIC: ###
 
@@ -41,8 +41,6 @@ class Networker:
             self.socket = _setupTCP(PORT)
         elif type(client) == BS:
             self.socket = _setupUDP(PORT)
-        elif type(client) == Bouncer:
-           # XXX 
         else
             raise ValueError
 
