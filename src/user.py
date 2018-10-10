@@ -42,9 +42,7 @@ class User:
     def receive_ddr(self, status):
         self._receive_line('DDR', status)
 
-
     ### PRIVATE ###
-
 
     def _next_field(self)
         return networking.recv_field()
