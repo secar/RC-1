@@ -1,65 +1,103 @@
 #!/usr/bin/env python3
 
 import networker
+import registry
 
 class CS:
     networker = networker.CSNetworker()
     active_bs_list = []
     active_user_list = []
 
+    def __init__(self, networker):
+        self.networker = networker
+
     def accept_aut(user, name, password):
-        if register.auth_user(name, password):
-            user.setname(name)                                                       
-            user.setpassword(password)                                               
-            self.active_BS_list.append()
-            status = 'OK'
-        else:
-            status = 'NOK'
-            status = 'NEW'
+        status = registry.auth_user(name, password)
+        if status != 'NOK':
+            user.name = name
+            user.password = password
+            self.active_user_list.append(user)
         user.receive_aur(status)
 
+    def accept_lur(user):
+        user.accept_
+        
     def accept_dlu(user):
-        if register.delete_user(user.name):
+        if registry.delete_user(user.name):
             status = 'OK'
-            user.die()
-            self.active_BS_list.remove(bs)
+            self.active_user_list.remove(user)
         else:
             status = 'NOK'
         user.receive_dlr(status)
+        user.die()
 
     def accept_bck(user, directory, N, files_list):
-        bs = registry.get_bs(directory)
+        bs = self.get_bs(registry.get_bs(directory))
         bs.accept_lsf(directory)   # in this
-        bs.execute(cs)
+        filelist = lsf_args()[0]
+        self.accept_lfd(bs, user)
+        ip, port = bs.get_addrinfo()
+
+    def accept_lfd(user, bs, files):
+        files = bs.lfd_args()
+        user.accept_lfd(files)
 
     def accept_lsf(user, directory):
-        bs = registry.get_bs(directory)
-        bs.receive_lsf(directory)
-        bs.execute(cs)
+        bs = self.get_bs(user, directory)
+        bs.receive_lsf(user.name, directory)
+        assert(bs.get_cmd() == 'LFD')
+        accept_lfd(user, files)
+
+    def get_bs(user, directory):
+        addrinfo = get_bs_addrinfo()
+        for bs in self.active_bs_list:
+            if addrinfo == bs.get_addrinfo():
+                return bs        
+
+    def accept_dbr(user, bs, status):
+        status = bs.dbr_args()
+        user.accept_dlr(status)
 
     def accept_del(user, directory):
-        bs_addrinfo = registry.get_bs(directory)
-        bs.receive_dlb()
-        user.receive_ddr()
-        bs.execute(cs)
+        bs = self.get_bs(user, directory)
+        bs.receive_dlb(user.name, directory)
+        assert(bs.get_cmd() == 'DBR')
+        bs.accept_dbr(bs)
 
-    def accept_reg(bs):
-        ip, port = bs.get_line()
+    def accept_lsd(self, user):
+        files = registry.user_files(user)
+        user.accept_ldr(files)
+
+    def accept_reg(self, bs, ip, port):
         bs.set_port(ip)
         bs.set_ip(port)
-        _active_BS_list.append(bs)
+        self.active_bs_list.append(bs)
+        status = 'OK'
         bs.receive_rgr(status)
 
-    def accept_unr(bs):
-        ip, port = bs.get_line()
-        _active_BS_list.append(bs)
+    def accept_unr(bs, ip, port):
+        addrinfo = bs.uar_args()
+        bs = get_bs(addrinfo)
+        self.active_bs_list.append(bs)
         status = 'OK'
-        bs.receive_uar(status
+        bs.receive_uar(status)
 
     def start(self):
-        ready = self.networker.client_select(client_list) # XXX: May block!
+        call_table = {                                                  
+            'REG': self.accept_reg,                             
+            'UNR': self.accept_unr,                                              
+            'LFD': self.accept_lfd,                                              
+            'DBR': self.accept_dbr,
+            'UNR': self.accept_unr,
+            'LSD': self.accept_lsd,
+            'BCK': self.accept_bck
+        }                                                                        
+        ready = self.networker.client_select(
+            self.active_user_list + self.active_bs_list) # XXX: May block!
         for c in ready:
-            c.execute(self)
+            cmd = c.get_cmd()
+            args = parse(cmd)
+            call_table[cmd](c, *args)
 
 def main():
     cs = CS()

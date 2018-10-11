@@ -1,11 +1,13 @@
 class Client:
 
-    def __init__(self, networker):
-        self.networker = networker
+    def __init__(self):                                                          
+        raise NotImplementedError  
     
-    def handle(cs):
-        cmd = self.next_field()
-        cmd_to_handler[cmd](cs)
+    def get_cmd(self):
+        return self.next_field()
+
+    def get_args(self, cmd):
+        return self.cmd_to_handler[cmd]()
 
     def get_number(self):
         return self.next_field()

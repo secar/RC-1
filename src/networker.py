@@ -110,26 +110,26 @@ class CSNetworker:
         self.user_greeter = None 
         self.bs_greeter = None
 
-    def read_select(sockets):
+    def read_select(self, sockets):
         return select(sockets, [], [])[0]
     
-    def greet_user():
+    def greet_user(self):
         new_s = self.user_greeter.accept()[0]
         self.user_greeter.close()
         u = user.User(UserNetworker(new_s))
         self.user_greeter = tcp_socket()
         return u
 
-    def greet_bs():
+    def greet_bs(self):
         new_s = self.bs_greeter.dup()
         bs = bs.BS(BSNetworker(new_s))
         self.bs_greeter = udp_socket()
         return bs
 
-    def client_select(clients):
+    def client_select(self, clients):
         soc_to_cli= {c.networker.socket: c for c in clients}
-        ready_s = read_select(
-            list(cli_soc.keys()) + [self.user_greeter + self.bs_greeter]) 
+        ready_s = self.read_select(
+            list(soc_to_cli.keys()) + [self.user_greeter, self.bs_greeter]) 
         ready_c = [soc_to_cli[s] for s in ready_s]
         if self.user_greeter in ready_s:
              ready_c.append(greet_user())

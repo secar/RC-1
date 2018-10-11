@@ -26,18 +26,20 @@ if not os.path.exists(_USERDIR):
 
 ### PUBLIC ### 
 
-def add_user(n, password):
-    _write_pass_file(n, password)
-    _make_user_dir(n) 
-
 def del_user(user):
     _delete_user_dir(user)    
     _delete_pass_file(user)    
 
 def auth_user(user, password_given):
-    password = _read_pass_file(user)
-    return password_given == password
-
+    if _user_exists(user):
+        if password_given == _read_pass_file(user):
+            status = 'OK'
+        else:
+            status = 'NOK'
+    else:
+        status = 'NEW'
+    return status
+        
 def add_file(user, name, ip, port):
     _write_bs_file(user, name, ip, port)
 
@@ -48,7 +50,19 @@ def get_bs_addrinfo(user, filename):
     line = _read_bs_file(user, filename)
     return tuple(line.split())
 
+def user_files(user):
+    with dir_as_working(_USERDIR + user):
+        return os.listdir()
+        
 ### PRIVATE ###
+
+def _user_exists(user):
+    with dir_as_working(_USERDIR):
+        return os.isfile(user)
+
+def _add_user(n, password):
+    _write_pass_file(n, password)
+    _make_user_dir(n) 
 
 def _read_pass_file(user):
     with dir_as_working(_PASSDIR):
