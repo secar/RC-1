@@ -1,32 +1,25 @@
-import networking
+import networker
 
- class BS:
-    def __init__(self):
-        self.addrinfo  = None
-        self.sock = ClientSocket(BS)
-    
-    def get_command(self):
-        pass
+class BS:
+    self_parser_table = {
+        '': _handle_reg
+        '': _handle_unr
+        '': _handle_lfd
+        '': _handle_lur
+        '': _handle_dbr
+    }
 
-    def parse(self, cmd):
-        pass
-    
-    def receive_rgr(self):
-        self._receive_line('RGR', status) 
+    def accept_rgr(self):
+        self.networker.send_line('RGR', status) 
 
-    def receive_uar(self):
-        self._receive_line('UAR', status)
+    def accept_uar(self):
+        self.networker.send_line('UAR', status)
 
-    def receive_lsf(self, user, directory):
-        self._receive_line('LSF', user, directory)
+    def accept_lsf(self, user, directory):
+        self.networker.send_line('LSF', user, directory)
 
-    def receive_lsu(self, user, password):
-        self._receive_line('LSU', user, password)
+    def accept_lsu(self, user, password):
+        self.networker.send_line('LSU', user, password)
 
-    def receive_dlb(self, user, directory):
-        self._receive_line('DLB', user, directory)
-
-    ### PRIVATE ###
-
-    def _next_field(self)
-        return networking.recv_field(self.sock)
+    def accept_dlb(self, user, directory):
+        self.networker.send_line('DLB', user, directory)

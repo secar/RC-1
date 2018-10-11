@@ -1,0 +1,9 @@
+#!/bin/sh
+
+while :
+do
+    rm -rf registry
+    urxvt -e vim registry.test.py
+    ./registry.test.py
+    tree registry
+done  

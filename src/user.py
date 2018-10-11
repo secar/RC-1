@@ -1,88 +1,76 @@
 import networking
+import client
 
-class User:
+class User(client.Client):
 
-    self_parser_table = {
-        'AUT': _self_parse_aut
-        'DEL': _self_parse_del
-        'RSF': _self_parse_rsf
-        'BCK': _self_parse_bck
-        'LSF': _self_parse_lsf
+    cmd_to_handler = {
+        'AUT': _handle_aut
+        'DEL': _handle_del
+        'RSF': _handle_rsf
+        'BCK': _handle_bck
+        'LSF': _handle_lsf
     }
 
-    def __init__(self, simple_socket):
-        self.username  = None
-        self.password  = None
-        self.socket = 
-    
-    def get_command(self):
-        return self._get_next_field()
+    def accept_aur(self, status):
+        self.send_to_remote('AUR', status) 
 
-    def self_parse(self, command):
-        self.self_parser_table[command](self)
+    def accept_dlr(self, status):
+        self.send_to_remote('DLR', status) 
 
-    def receive_aur(self, status):
-        self._receive_line('AUR', status) 
+    def accept_bkr(self, ip, port, filespec_list):
+        self.send_to_remote('BKR', ip, port, filespec_list) 
 
-    def receive_dlr(self, status):
-        self._receive_line('DLR', status) 
+    def accept_rsr(self, ip, port):
+        self.send_to_remote('RSR', ip, port) 
 
-    def receive_bkr(self, ip, port, filespec_list):
-        self._receive_line('BKR', ip, port, filespec_list) 
+    def accept_ldr(self, N, dir_list):
+        self.send_to_remote('LDR', N, dir_list) 
 
-    def receive_rsr(self, ip, port):
-        self._receive_line('RSR', ip, port) 
+    def accept_lfd(self, ip, port, filespec_list):
+        self.send_to_remote('LFD', ip, port, filespec_list) 
 
-    def receive_ldr(self, N, dir_list):
-        self._receive_line('LDR', N, dir_list) 
+    def accept_ddr(self, status):
+        self.send_to_remote('DDR', status)
 
-    def receive_lfd(self, ip, port, filespec_list):
-        self._receive_line('LFD', ip, port, filespec_list) 
+    def _handle_aut(self, cs):
+        cs.accept_aut(self, *self._parse_aut(self))
+    def _handle_dlu(self, cs):
+        cs.accept_dlu(self, *self._parse_aut(self))
+    def _handle_rst(self, cs):
+        cs.accept_rst(self, *self._parse_rst(self))
+    def _handle_del(self, cs):
+        cs.accept_del(self, *self._parse_del(self))
+    def _handle_lsd(self, cs):
+        cs.accept_lsd(self, *self._parse_lsd(self))
 
-    def receive_ddr(self, status):
-        self._receive_line('DDR', status)
-
-    ### PRIVATE ###
-
-    def _next_field(self)
-        return networking.recv_field()
-
-    def _self_parse_aut(user):
-        user = user.next_field()
-        password = user.next_field()
-        if user and password:
-            return (user, password)
+    def _parse_aut(self):
+        self = self.next_field()
+        password = self.next_field()
+        if self and password:
+            return (self, password)
         else:
              raise ProtocolError
 
-    def _self_parse_dlu(user):
+    def _parse_dlu(self):
         return ()
 
-    def _self_parse_bck(user):
-            directory = user.next_field()
-            N = user.next_field() 
-            #if N.isdigit():
-            file_list = []                                                             
-            for _ in range(N):
-                name = user.next_field()
-                date = user.next_field()    
-                time = user.next_field()    
-                size = user.next_field()
-                line = name + ' ' + date ' ' + time + ' ' + size
-                file_list.append(line)
-            return (directory, N, file_list)
+    def _parse_bck(self):
+        directory = self.next_field()
+        N = self.get_number() 
+        file_list = self.get_filelist(N)
+        return (directory, N, file_list)
         
-    def _self_parse_rst(self):
-        directory = user.next_field()
+    def _parse_rst(self):
+        directory = self.next_field()
         return (directory,)
 
-    def _self_parse_del(user):
-        directory = user.next_field()
+    def _parse_del(self):
+        directory = self.next_field()
         return (directory,)
 
-    def _self_parse_lsf(self):
-        directory = user.next_field()
+    def _parse_lsf(self):
+        directory = self.next_field()
         return (directory,)
 
-    def _self_parse_lsd(user):
+    def _parse_lsd(self):
         return ()

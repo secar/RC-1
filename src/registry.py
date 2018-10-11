@@ -41,8 +41,8 @@ def auth_user(user, password_given):
 def add_file(user, name, ip, port):
     _write_bs_file(user, name, ip, port)
 
-def del_file(user, filename):
-    _delete_bs_file(user, name, filename)
+def del_file(user, name):
+    _delete_bs_file(user, name)
         
 def get_bs_addrinfo(user, filename):
     line = _read_bs_file(user, filename)
@@ -82,6 +82,6 @@ def _write_bs_file(user, filename, ip, port):
         with open(filename, mode='x') as bsfile:
             bsfile.write(ip + ' ' + port)
 
-def _delete_bs_file(user, filename):
+def _delete_bs_file(user, name):
     with dir_as_working(_USERDIR + user):
         os.remove(name)
