@@ -1,38 +1,59 @@
 #!/usr/bin/env python3
 
-from socket import socket, AF_INET, SOCK_STREAM, SOCK_DGRAM, gethostname
-from select import select
+from socket import *
+from select import *
+from signal import *
 import bs
 import user
 
 PORT = 50000
+udp_socket = None
+tcp_socket = None
 
 ### PUBLIC: ###
 
-udp_buffer = {}
-_udp_socket = None
+def cleanup():
+    if tcp_socket:
+        tcp_socket.close()
+    if udp_socket:
+        udp_socket.close()
 
-def tcp_socket():
-    s = socket(AF_INET, SOCK_STREAM)
-    s.bind((gethostname(), PORT))
-    s.listen(20)
-    return s
+def setup_sockets():
+    global udp_socket
+    global tcp_socket
+    try:
+        cleanup()
+        tcp_socket = socket(family=AF_INET, type=SOCK_STREAM)
+        tcp_socket.bind(('', PORT))
+        tcp_socket.listen(20)
+        udp_socket = socket(family=AF_INET, type=SOCK_DGRAM)
+        udp_socket.bind(('', PORT))
+    except:
+        cleanup()
+        raise
+setup_sockets()
 
-def udp_socket():
-    global _udp_socket
-    if not _udp_socket:
-        _udp_socket = socket(AF_INET, SOCK_DGRAM)                            
-        _udp_socket.bind((gethostname(), PORT)) 
-    return _udp_socket
 
-def pop_buffer_byte(self, addrinfo):
-    return udp_buffer.pop(addrinfo)
-
-def push_buffer_byte(self, addrinfo, byte):
-        if udp_buffer.get(addrinfo):
-            udp_buffer[addrinfo] += byte
+def client_select(clients):
+    clients = {c.get_addrinfo(): c for c in clients}
+    ready = select([tcp_socket, udp_socket], [], [])[0]
+    if tcp_socket in ready:
+        addrinfo = tcp_socket.accept()[1]
+        c = clients.get(addrinfo)
+        if c:
+            return c
         else:
-            udp_buffer[addrinfo] = byte
+            return user.User(UserNetworker(addrinfo))
+    elif udp_socket in ready:
+        addrinfo = udp_socket.recvfrom(0)[1]
+        c = clients.get(addrinfo)
+        if c:
+            return c
+        else:
+            return bs.BS(BSNetworker(addrinfo))
+    else:
+        raise Exception
+            
 
 class ClientNetworker: # Abstract
 
@@ -54,17 +75,13 @@ class ClientNetworker: # Abstract
             line = line + b'\n'
         return line
 
-    def die(self):                                                               
-        self.socket.close()                                                      
-        self.socket = None
-
     def get_addrinfo(self):
-        return self.socket.getsockname()
+        return self.addrinfo
 
 class UserNetworker(ClientNetworker):
 
-    def __init__(self):
-        self.socket = tcp_socket()
+    def __init__(self, addrinfo):
+        self.addrinfo = addrinfo
 
     def send_line(self, line):
         line = fix_line(line)
@@ -80,8 +97,8 @@ class UserNetworker(ClientNetworker):
 
 class BSNetworker(ClientNetworker):
 
-    def __init__(self):
-        self.socket = udp_socket()
+    def __init__(self, addrinfo):
+        self.addrinfo = addrinfo
         
     def send_line(self, line):
         line = fix_line(line)
@@ -98,41 +115,8 @@ class BSNetworker(ClientNetworker):
                 byte = None # not ours
         return byte
 
-class CSNetworker:
+        
 
-    def __init__(self):
-        self.user_greeter = tcp_socket()
-        self.bs_greeter = udp_socket()
 
-    def die(self):                                                               
-        self.user_greeter.close()
-        self.bs_greeter.close()
-        self.user_greeter = None 
-        self.bs_greeter = None
 
-    def read_select(self, sockets):
-        return select(sockets, [], [])[0]
-    
-    def greet_user(self):
-        new_s = self.user_greeter.accept()[0]
-        self.user_greeter.close()
-        u = user.User(UserNetworker(new_s))
-        self.user_greeter = tcp_socket()
-        return u
 
-    def greet_bs(self):
-        new_s = self.bs_greeter.dup()
-        bs = bs.BS(BSNetworker(new_s))
-        self.bs_greeter = udp_socket()
-        return bs
-
-    def client_select(self, clients):
-        soc_to_cli= {c.networker.socket: c for c in clients}
-        ready_s = self.read_select(
-            list(soc_to_cli.keys()) + [self.user_greeter, self.bs_greeter]) 
-        ready_c = [soc_to_cli[s] for s in ready_s]
-        if self.user_greeter in ready_s:
-             ready_c.append(greet_user())
-        if self.bs_greeter in ready_s:
-            ready_c.append(greet_bs())
-        return ready_c

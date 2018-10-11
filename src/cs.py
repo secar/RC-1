@@ -2,14 +2,12 @@
 
 import networker
 import registry
+from signal import *
+import atexit
 
 class CS:
-    networker = networker.CSNetworker()
     active_bs_list = []
     active_user_list = []
-
-    def __init__(self, networker):
-        self.networker = networker
 
     def accept_aut(user, name, password):
         status = registry.auth_user(name, password)
@@ -20,7 +18,7 @@ class CS:
         user.receive_aur(status)
 
     def accept_lur(user):
-        user.accept_
+        user.accept
         
     def accept_dlu(user):
         if registry.delete_user(user.name):
@@ -83,24 +81,32 @@ class CS:
         bs.receive_uar(status)
 
     def start(self):
-        call_table = {                                                  
-            'REG': self.accept_reg,                             
-            'UNR': self.accept_unr,                                              
-            'LFD': self.accept_lfd,                                              
-            'DBR': self.accept_dbr,
-            'UNR': self.accept_unr,
-            'LSD': self.accept_lsd,
-            'BCK': self.accept_bck
-        }                                                                        
-        ready = self.networker.client_select(
-            self.active_user_list + self.active_bs_list) # XXX: May block!
-        for c in ready:
-            cmd = c.get_cmd()
+        while 1:
+            call_table = {                                                  
+                'REG': self.accept_reg,                             
+                'UNR': self.accept_unr,                                              
+                'LFD': self.accept_lfd,                                              
+                'DBR': self.accept_dbr,
+                'UNR': self.accept_unr,
+                'LSD': self.accept_lsd,
+                'BCK': self.accept_bck
+            }                                                                        
+            client = networker.client_select(
+                self.active_user_list + self.active_bs_list) # XXX: May block!
+            cmd = client.get_cmd()
             args = parse(cmd)
-            call_table[cmd](c, *args)
+            call_table[cmd](client, *args)
 
+def sighandler(sig, frame):                                                   
+    print('\nCaught', Signals(sig).name)
+    exit()                                                                       
+                    
 def main():
     cs = CS()
+    signal(SIGTERM, sighandler)
+    signal(SIGINT, sighandler)
+    signal(SIGALRM, sighandler)
+    atexit.register(networker.cleanup) 
     cs.start()
 
 if __name__ == '__main__':
