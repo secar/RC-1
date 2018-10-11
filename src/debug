@@ -2,8 +2,6 @@
 
 while :
 do
-    rm -rf registry
-    urxvt -e vim registry.test.py
-    ./registry.test.py
-    tree registry
+    urxvt -e vim "$1"
+    python3 -i "$1"
 done  

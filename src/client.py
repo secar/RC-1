@@ -5,7 +5,7 @@ class Client:
     
     def handle(cs):
         cmd = self.next_field()
-        cmd_to_handler[cmd]()
+        cmd_to_handler[cmd](cs)
 
     def get_number(self):
         return self.next_field()
@@ -17,11 +17,11 @@ class Client:
             date = user.next_field()    
             time = user.next_field()    
             size = user.next_field()
-            line = name + ' ' + date ' ' + time + ' ' + size
+            line = name + ' ' + date + ' ' + time + ' ' + size
             file_list.append(line)
         return files
 
-    def next_field(self)
+    def next_field(self):
         return self.networking.recv_field()
 
     def send_to_remote(self, *args): 

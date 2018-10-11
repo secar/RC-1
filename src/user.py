@@ -1,15 +1,16 @@
-import networking
+import networker
 import client
 
 class User(client.Client):
 
-    cmd_to_handler = {
-        'AUT': _handle_aut
-        'DEL': _handle_del
-        'RSF': _handle_rsf
-        'BCK': _handle_bck
-        'LSF': _handle_lsf
-    }
+    def __init__(self):
+        cmd_to_handler = {
+            'AUT': _handle_aut,
+            'DEL': _handle_del,
+            'RSF': _handle_rsf,
+            'BCK': _handle_bck,
+            'LSF': _handle_lsf
+        }
 
     def accept_aur(self, status):
         self.send_to_remote('AUR', status) 

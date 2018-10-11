@@ -1,24 +1,38 @@
 #!/usr/bin/env python3
 
-from socket import socket
+from socket import socket, AF_INET, SOCK_STREAM, SOCK_DGRAM, gethostname
 from select import select
 import bs
 import user
 
-PORT = None
+PORT = 50000
 
 ### PUBLIC: ###
 
-def tcp_socket(port):                                                          
-    s = socket(AF_INET, SOCK_STREAM)                           
-    s.bind((gethostname(), port))
+udp_buffer = {}
+_udp_socket = None
+
+def tcp_socket():
+    s = socket(AF_INET, SOCK_STREAM)
+    s.bind((gethostname(), PORT))
     s.listen(20)
     return s
 
-def udp_socket(port):                                                          
-    s = socket(AF_INET, SOCK_DGRAM)                            
-    s.bind((gethostname(), port)) 
-    return s
+def udp_socket():
+    global _udp_socket
+    if not _udp_socket:
+        _udp_socket = socket(AF_INET, SOCK_DGRAM)                            
+        _udp_socket.bind((gethostname(), PORT)) 
+    return _udp_socket
+
+def pop_buffer_byte(self, addrinfo):
+    return udp_buffer.pop(addrinfo)
+
+def push_buffer_byte(self, addrinfo, byte):
+        if udp_buffer.get(addrinfo):
+            udp_buffer[addrinfo] += byte
+        else:
+            udp_buffer[addrinfo] = byte
 
 class ClientNetworker: # Abstract
 
@@ -33,7 +47,7 @@ class ClientNetworker: # Abstract
             byte = self.read_byte()
         return field.decode()
 
-    def fix_line(self, line)
+    def fix_line(self, line):
         if type(line) != bytes:
             line = line.encode()
         if line[-1] != b'\n':
@@ -42,10 +56,15 @@ class ClientNetworker: # Abstract
 
     def die(self):                                                               
         self.socket.close()                                                      
-        self.socket = None                                                       
+        self.socket = None
+
+    def get_addrinfo(self):
+        return self.socket.getsockname()
 
 class UserNetworker(ClientNetworker):
-    socket = tcp_socket()
+
+    def __init__(self):
+        self.socket = tcp_socket()
 
     def send_line(self, line):
         line = fix_line(line)
@@ -61,17 +80,8 @@ class UserNetworker(ClientNetworker):
 
 class BSNetworker(ClientNetworker):
 
-    socket = udp_socket()
-    udp_buffer = {}
-
-    def pop_buffer_byte(self, addrinfo):
-        return self.udp_buffer.pop(addrinfo)
-
-    def push_buffer_byte(self, addrinfo, byte):
-            if self.udp_buffer.get(addrinfo):
-                self.b[addrinfo] += byte
-            else:
-                self.b[addrinfo] = byte
+    def __init__(self):
+        self.socket = udp_socket()
         
     def send_line(self, line):
         line = fix_line(line)
@@ -89,8 +99,10 @@ class BSNetworker(ClientNetworker):
         return byte
 
 class CSNetworker:
-    user_greeter = tcp_socket(PORT)
-    bs_greeter = udp_socket(PORT)
+
+    def __init__(self):
+        self.user_greeter = tcp_socket()
+        self.bs_greeter = udp_socket()
 
     def die(self):                                                               
         self.user_greeter.close()
@@ -103,16 +115,15 @@ class CSNetworker:
     
     def greet_user():
         new_s = self.user_greeter.accept()[0]
-        u = user.User(UserNetworker(new_s))
         self.user_greeter.close()
-        self.user_greeter = tcp_socket(PORT)
+        u = user.User(UserNetworker(new_s))
+        self.user_greeter = tcp_socket()
         return u
 
     def greet_bs():
         new_s = self.bs_greeter.dup()
         bs = bs.BS(BSNetworker(new_s))
-        self.bs_greeter.close()
-        self.bs_greeter = udp_socket(PORT)
+        self.bs_greeter = udp_socket()
         return bs
 
     def client_select(clients):
