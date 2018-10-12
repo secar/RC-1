@@ -43,80 +43,48 @@ def client_select(clients):
         if c:
             return c
         else:
-            return user.User(UserNetworker(addrinfo))
+            return user.User(addrinfo)
     elif udp_socket in ready:
         addrinfo = udp_socket.recvfrom(0)[1]
         c = clients.get(addrinfo)
         if c:
             return c
         else:
-            return bs.BS(BSNetworker(addrinfo))
+            return bs.BS(addrinfo)
     else:
         raise Exception
-            
 
-class ClientNetworker: # Abstract
+def read_field(client):
+    byte  = self.read_byte()
+    field = b''
+    while byte not in (b' ', b'\n', b''):
+        field += byte
+        byte = self.read_byte()
+    return field.decode()
 
-    def __init__(self):
-        raise NotImplementedError
+def fix_line(line):
+    if type(line) != bytes:
+        line = line.encode()
+    if line[-1] != b'\n':
+        line = line + b'\n'
+    return line
 
-    def read_field(self):
-        byte  = self.read_byte()
-        field = b''
-        while byte not in (b' ', b'\n', b''):
-            field += byte
-            byte = self.read_byte()
-        return field.decode()
+def send_line(target, line):
+    if type(target) == User:
+        socket = tcp_socket
+    if type(target) == BS:
+        socket = udp_socket
+    line = fix_line(line)
+    while line:
+        if socket.sendto(line[0], target):
+            line = line[1:]
 
-    def fix_line(self, line):
-        if type(line) != bytes:
-            line = line.encode()
-        if line[-1] != b'\n':
-            line = line + b'\n'
-        return line
-
-    def get_addrinfo(self):
-        return self.addrinfo
-
-class UserNetworker(ClientNetworker):
-
-    def __init__(self, addrinfo):
-        self.addrinfo = addrinfo
-
-    def send_line(self, line):
-        line = fix_line(line)
-        while line:
-            if self.socket.send(line[0]):
-                line = line[1:]
-
-    def read_byte(self):
-        byte = self.socket.recv(1)
-        while not byte:                                                      
-            byte = self.socket.recv(1)                                               
-        return byte                                                              
-
-class BSNetworker(ClientNetworker):
-
-    def __init__(self, addrinfo):
-        self.addrinfo = addrinfo
-        
-    def send_line(self, line):
-        line = fix_line(line)
-        while line:
-            if self.socket.sendto(line[0], self.peer_addrinfo):
-                line = line[1:]
-
-    def read_byte(self, peer_addrinfo):
-        byte = udp_buffer.pop_buffer_byte(peer_addrinfo)
-        while not byte:
-            byte, received_addrinfo = self.socket.recvfrom(1) 
-            if peer_addrinfo != received_addrinfo:
-                self.udp_buffer.push_byte(byte)
-                byte = None # not ours
-        return byte
-
-        
-
-
-
-
+def read_byte(origin):
+    if type(target) == User:
+        socket = tcp_socket
+    if type(target) == BS:
+        socket = udp_socket
+    byte = socket.recv(1)
+    while not byte:                                                      
+        byte = socket.recvfrom(1, origin.get_addrinfo())
+    return byte                                                              

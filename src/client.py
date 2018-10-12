@@ -24,7 +24,7 @@ class Client:
         return files
 
     def next_field(self):
-        return self.networker.recv_field()
+        return self.networker.read_field()
 
     def send_to_remote(self, *args): 
         line = ' '.join(args)

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-import networker
+import networking
 import client
 
 class User(client.Client):
 
-    def __init__(self, networker):                                               
-        self.networker = networker
+    def __init__(self, addrinfo):                                               
+        self.addrinfo = addrinfo
 
     def accept_aur(self, status):
         self.send_to_remote('AUR', status) 

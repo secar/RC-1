@@ -100,13 +100,16 @@ class CS:
 def sighandler(sig, frame):                                                   
     print('\nCaught', Signals(sig).name)
     exit()                                                                       
-                    
-def main():
-    cs = CS()
+            
+def setup():
     signal(SIGTERM, sighandler)
     signal(SIGINT, sighandler)
     signal(SIGALRM, sighandler)
-    atexit.register(networker.cleanup) 
+    atexit.register(networking.cleanup) 
+        
+def main():
+    setup()
+    cs = CS()
     cs.start()
 
 if __name__ == '__main__':
